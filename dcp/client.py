@@ -4,25 +4,27 @@ import json
 
 class Client:
     '''
-    Export JSON following the DCP metadata including a 
-    manifest of all files and any available URL data.
+    Expose requests methods while simplifying DCP auth.
     '''
-    def __init__(self, credentials_filename, base_url):
+    def __init__(self, base_url="https://dcp.bionimbus.org", credentials_filename="credentials.json"):
         self.base_url = base_url
-        self.access_token = self.access_token(
+        self.access_token = self.get_access_token(
             credentials_filename)
-        self.sheep_url = '{}/api/v0/submission'.format(base_url)
-        self.indexd_url = '{}/index/index/'.format(base_url)
+        self.sheepdog_path = 'api/v0/submission'
+        self.indexd_path = 'index/index/'
+        self.download_path = 'user/data/download'
+        self.peregrine_path = '' # TODO ...
     
     def headers(self, headers={}):
         '''
         Return the headers dict that includes the access token for 
         creating a request.
         '''
+        # TODO token refreshing
         headers.update({'Authorization': 'bearer ' + self.access_token})
         return headers
     
-    def access_token(self, filename):
+    def get_access_token(self, filename):
         '''
         Get a fence access token using a path to a credentials.json
         and return that token.
@@ -45,9 +47,32 @@ class Client:
 
     def get(self, base_path, **kwargs):
        '''
-       Exposes an authorized form of requests get
+       Exposes an authorized form of requests get and extends the 
+       headers keyword to include an Authorization bearer token.
        '''
        return requests.get(
             "{}/{}".format(self.base_url, base_path),
-            headers=self.headers(),
+            headers=self.headers(kwargs.get('headers', {})),
             *kwargs)
+    
+    def post(self, base_path, **kwargs):
+        '''
+        Exposes the post feature of the requests module adding a bearer token.
+        '''
+        return requests.post(
+            "{}/{}".format(self.base_url, base_path),
+            headers=self.headers(kwargs.get('headers', {})),
+            *kwargs)
+
+    def get_download_url(self, guid):
+        '''
+        Accepts a data guid and returns a signed URL at which the guid can
+        be downloaded (if auth concerns are met).
+        '''
+        try:
+            response = self.get('{}/{}'.format(self.download_path, guid)).json()['url']
+        except Exception as e:
+            print('Failed to get download URL')
+            print(str(e))
+            return None
+        return response
