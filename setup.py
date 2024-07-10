@@ -20,7 +20,7 @@ setup(
     packages=[
         "dcp"
     ],
-    url="https://github.com/david4096/dcp",
+    url="https://github.com/david4096/dcp-client",
     long_description=long_description,
     long_description_content_type='text/markdown',
     install_requires=[
